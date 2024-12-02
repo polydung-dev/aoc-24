@@ -12,6 +12,17 @@ struct DA_int {
 	size_t capacity;
 };
 
+struct kvp {
+	int key;
+	int value;
+};
+
+struct DA_kvp {
+	struct kvp** data;
+	size_t size;
+	size_t capacity;
+};
+
 void load_from_file(
 	const char* path, struct DA_int* left, struct DA_int* right
 );
@@ -20,10 +31,14 @@ int cmp_int(const void* a, const void* b);
 
 int main(void) {
 	size_t i = 0;
+	size_t j = 0;
 	unsigned long sum = 0;
 	struct DA_int* left = NULL;
 	struct DA_int* right = NULL;
+	struct DA_kvp* counter = NULL;
 
+
+	/* part 1 */
 	da_create(left);
 	da_create(right);
 
@@ -41,6 +56,69 @@ int main(void) {
 
 	printf("Sum of differences: %lu\n", sum);
 
+	/* part 2a */
+	da_create(counter);
+	for (i = 0; i < right->size; ++i) {
+		int k = right->data[i];
+		int found = 0;
+		size_t idx = 0;
+		struct kvp* p = NULL;
+
+		/* search for key */
+		for (j = 0; j < counter->size; ++j) {
+			if (counter->data[j]->key == k) {
+				found = 1;
+				idx = j;
+				break;
+			}
+		}
+
+		/* insert if not found */
+		if (!found) {
+			p = malloc(sizeof(*p));
+			p->key = k;
+			p->value = 0;
+			da_append(counter, p);
+			idx = counter->size - 1;
+		}
+
+		/* increment counter */
+		++(counter->data[idx]->value);
+	}
+
+	/* part 2b */
+	sum = 0;
+	for (i = 0; i < left->size; ++i) {
+		int k = left->data[i];
+		int found = 0;
+		size_t idx = 0;
+		int n = 0;
+
+		/* search for key */
+		for (j = 0; j < counter->size; ++j) {
+			if (counter->data[j]->key == k) {
+				found = 1;
+				idx = j;
+				break;
+			}
+		}
+
+		/* skip if not found */
+		if (!found) {
+			continue;
+		}
+
+		n = left->data[i] * counter->data[idx]->value;
+		sum += n;
+	}
+
+	printf("Similarity score: %li\n", sum);
+
+	for (i = 0; i < counter->size; ++i) {
+		free(counter->data[i]);
+	}
+
+	da_destroy(counter);
 	da_destroy(right);
 	da_destroy(left);
 
