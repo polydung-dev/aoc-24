@@ -29,10 +29,13 @@ char* report_strerr(enum ReportStatus status);
 void load_from_file(const char* path, struct DA_da_int* reports);
 int check_report(struct DA_int* report, int* err_idx);
 
+int brute_force_damper(struct DA_int* report, int* err_idx);
+
 int main(void) {
 	size_t i = 0;
 	int status;
 	unsigned long safe_sum = 0;
+	unsigned long damped = 0;
 	struct DA_da_int* reports = NULL;
 
 	da_create(reports);
@@ -42,6 +45,7 @@ int main(void) {
 	printf("Number of reports to check: %lu\n", reports->size);
 
 	safe_sum = 0;
+	damped = 0;
 	for (i = 0; i < reports->size; ++i) {
 		int err_idx = 0;
 
@@ -58,12 +62,18 @@ int main(void) {
 		} else {
 			printf("%*c\n", 13 + err_idx + (err_idx * 4), '^');
 			printf("[ fail ] %s\n", report_strerr(status));
+
+			status = brute_force_damper(reports->data[i], &err_idx);
+			if (status == REPORT_OK) {
+				++damped;
+				printf("[ pass ] removed index %i\n", err_idx);
+			}
 		}
 		printf("\n");
 	}
 
 	printf("Number of safe reports: %lu\n", safe_sum);
-
+	printf("Number of safe reports (with damper): %lu\n", safe_sum+damped);
 
 	/* destroy each report */
 	for (i = 0; i < reports->size; ++i) {
@@ -164,4 +174,24 @@ exit:
 abort:
 	*err_idx = i + 1;
 	goto exit;
+}
+
+int brute_force_damper(struct DA_int* report, int* err_idx) {
+	int status = REPORT_OK;
+	size_t i = 0;
+	struct DA_int* copy = NULL;
+
+	for (i = 0; i < report->size; ++i) {
+		da_copy(copy, report);
+		da_erase(copy, i);
+		status = check_report(copy, err_idx);
+		da_destroy(copy);
+
+		if (status == REPORT_OK) {
+			*err_idx = i;
+			break;
+		}
+	}
+
+	return status;
 }

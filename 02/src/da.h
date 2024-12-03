@@ -45,6 +45,15 @@ do {                                                                          \
 	(da)->data[(da)->size - 1] = (elem);                                  \
 } while (0)
 
+#define da_copy(dst, src)                                                     \
+do {                                                                          \
+	(dst) = malloc(sizeof(*(dst)));                                       \
+	(dst)->data = calloc((src)->size, sizeof((dst)->data[0]));            \
+	(dst)->size = (src)->size;                                            \
+	(dst)->capacity = (src)->size;                                        \
+	memcpy((dst)->data, (src)->data, (src)->size * sizeof(*(src)->data)); \
+} while (0)
+
 #define da_erase(da, idx)                                                     \
 do {                                                                          \
 	void* dst = NULL;                                                     \
