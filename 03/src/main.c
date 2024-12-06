@@ -7,20 +7,77 @@
 
 #define ARRAY_SIZE(arr) sizeof((arr)) / sizeof((arr)[0])
 
+enum NodeType {
+	NODE_NULL = 0,
+	NODE_MUL,
+	NODE_DO,
+	NODE_DONT
+};
+
+struct Node {
+	enum NodeType node_type;
+	int a;
+	int b;
+	struct Node* next;
+};
+
 char* read_file(const char* path);
-void parse_data(const char* data, int* output);
+void parse_data(const char* data, struct Node** output);
 char* copy_match(regmatch_t* pmatch, const char* s, size_t idx);
+
+void ll_free(struct Node* node) {
+	struct Node* tmp = NULL;
+
+	/* iterate through list, freeing on the way */
+	while (node != NULL) {
+		tmp = node->next;
+		free(node);
+		node = tmp;
+	}
+}
 
 int main(void) {
 	char* buf = NULL;
-	int output = 0;
+	struct Node* output = NULL;
+	struct Node* node = NULL;
+	int sum = 0;
+	int controlled_sum = 0;
+	int do_sum = 1;
 
 	buf = read_file("./data/test.txt");
 	parse_data(buf, &output);
 	free(buf);
 
-	printf("Sum of products: %i\n", output);
+	node = output;
+	while (node != NULL) {
+		switch (node->node_type) {
+			case NODE_MUL:
+				if (do_sum) {
+					controlled_sum += (node->a * node->b);
+				}
+				sum += (node->a * node->b);
+				break;
 
+			case NODE_DO:
+				do_sum = 1;
+				break;
+
+			case NODE_DONT:
+				do_sum = 0;
+				break;
+
+			case NODE_NULL:
+			default:
+				break;
+
+		}
+		node = node->next;
+	}
+
+	printf("Sum of products: %i\n", sum);
+	printf("Sum of products (controlled): %i\n", controlled_sum);
+
+	ll_free(output);
 	return 0;
 }
 
@@ -52,28 +109,32 @@ char* read_file(const char* path) {
 	}
 
 	bytes_read = fread(buf, 1, byte_count, fp);
-	fclose(fp);
+	buf[byte_count] = '\0';
 
 	printf("bytes read == %lu\n", bytes_read);
 
-	/* fread might not read all bytes at once, fix later if needed*/
+	/* fread doesn't set errno? */
 	assert(byte_count == bytes_read);
-	if (byte_count != bytes_read) {
-		fprintf(stderr, "incomplete read\n");
+	if (byte_count != bytes_read && !feof(fp)) {
+		fprintf(stderr, "error reading file %i\n", ferror(fp));
+		fclose(fp);
 		exit(1);
 	}
 
-	buf[byte_count] = '\0';
-
+	fclose(fp);
 	return buf;
 }
 
-void parse_data(const char* data, int* output) {
-	static const char* const re = "mul\\(([0-9]{1,3}),([0-9]{1,3})\\)";
+void parse_data(const char* data, struct Node** output) {
+	static const char* const re = \
+		"mul\\(([0-9]{1,3}),([0-9]{1,3})\\)|do\\(\\)|don't\\(\\)";
+
 	regex_t regex;
 	regmatch_t pmatch[3]; /* whole match + two groups */
 	const char* substr = NULL;
 	size_t i = 0;
+	struct Node* node = calloc(1, sizeof(struct Node));
+	*output = node;
 
 	if (regcomp(&regex, re, REG_EXTENDED)) {
 		fprintf(stderr, "failed to compile regex\n");
@@ -84,19 +145,36 @@ void parse_data(const char* data, int* output) {
 	printf("string = %s\n", data);
 	printf("matches: \n");
 	for (i = 0; ; ++i) {
+		char* m = NULL;
 		char* a = NULL;
 		char* b = NULL;
 		if (regexec(&regex, substr, ARRAY_SIZE(pmatch), pmatch, 0)) {
 			break;
 		}
 
-		printf("#%lu: ", i);
-		a = copy_match(pmatch, substr, 1);
-		b = copy_match(pmatch, substr, 2);
-		printf("a == %3s, b == %3s\n", a, b);
+		printf("command %lu: ", i + 1);
+		m = copy_match(pmatch, substr, 0);
+		printf("%s\n", m);
 
-		*output += atoi(a) * atoi(b);
+		if (strncmp(m, "mul(", 4) == 0) {
+			node->node_type = NODE_MUL;
+			a = copy_match(pmatch, substr, 1);
+			b = copy_match(pmatch, substr, 2);
+			node->a = atoi(a);
+			node->b = atoi(b);
+			node->next = calloc(1, sizeof(struct Node));
+			node = node->next;
+		} else if (strncmp(m, "do()", 4) == 0) {
+			node->node_type = NODE_DO;
+			node->next = calloc(1, sizeof(struct Node));
+			node = node->next;
+		} else if (strncmp(m, "don't()", 7) == 0) {
+			node->node_type = NODE_DONT;
+			node->next = calloc(1, sizeof(struct Node));
+			node = node->next;
+		}
 
+		free(m);
 		free(a);
 		free(b);
 
@@ -104,7 +182,6 @@ void parse_data(const char* data, int* output) {
 	}
 
 	regfree(&regex);
-
 }
 
 char* copy_match(regmatch_t* pmatch, const char* s, size_t idx) {
