@@ -17,5 +17,6 @@ Each day will be in its own directory (zero-padded day number), and built with
 - No support for "C++" comments, (`//`), and `/**/` comments cannot be nested.
     This makes commenting out blocks of code (e.g. for testing) more of a
     hassle than it needs to be.
+- No `restrict` keyword.
 
 [AoC]: <https://adventofcode.com/2024>
