@@ -48,6 +48,19 @@ size_t find_xmas(
 	char* search_grid, size_t num_cols, size_t num_rows,
 	enum Direction direction, char* display_grid
 );
+/**
+ * Counts the number of "X-MAS" strings.
+ *
+ * @param [in]    search_grid [num_cols * num_rows]
+ * @param         num_cols
+ * @param         num_rows
+ * @param [inout] display_grid [num_cols * num_rows]
+ *
+ * @return word count
+ */
+size_t find_x_mas(
+	char* search_grid, size_t num_cols, size_t num_rows, char* display_grid
+);
 
 int main(void) {
 	struct DA_string* lines = NULL;
@@ -71,14 +84,14 @@ int main(void) {
 
 	/* convert lines into a flat array */
 	output = malloc(grid_size);
-	memset(output, '.', grid_size);
-
 	grid = malloc(grid_size);
 	for (i = 0; i < lines->size; ++i) {
 		memcpy(grid + (i * num_cols), lines->data[i], num_cols);
 	}
 
-	/* search for words */
+	/* part 1 */
+	memset(output, '.', grid_size);
+	count = 0;
 	count += find_xmas(grid, num_cols, num_rows, DIR_NORTH, output);
 	count += find_xmas(grid, num_cols, num_rows, DIR_EAST,  output);
 	count += find_xmas(grid, num_cols, num_rows, DIR_SOUTH, output);
@@ -92,7 +105,18 @@ int main(void) {
 		printf("%.*s\n", (int)num_cols, output + (i * num_cols));
 	}
 
-	printf("Word count == %lu\n", count);
+	printf("XMAS count == %lu\n", count);
+
+	/* part 2 */
+	memset(output, '.', grid_size);
+	count = 0;
+	count += find_x_mas(grid, num_cols, num_rows, output);
+
+	for (i = 0; i < num_rows; ++i) {
+		printf("%.*s\n", (int)num_cols, output + (i * num_cols));
+	}
+
+	printf("X-MAS count == %lu\n", count);
 
 
 	for (i = 0; i < lines->size; ++i) {
@@ -258,6 +282,52 @@ size_t find_xmas(
 			display_grid[index + (1 * h_off) + (1 * v_off)] = 'M';
 			display_grid[index + (2 * h_off) + (2 * v_off)] = 'A';
 			display_grid[index + (3 * h_off) + (3 * v_off)] = 'S';
+			++count;
+		}
+	}
+	return count;
+}
+
+size_t find_x_mas(
+	char* grid, size_t num_cols, size_t num_rows, char* display
+) {
+	size_t x = 0;
+	size_t y = 0;
+	size_t count = 0;
+
+	for (y = 1; y < num_rows - 1; ++y) {
+		size_t offset = y * num_cols;
+		for (x = 1; x < num_cols - 1; ++x) {
+			size_t index = x + offset;
+
+			size_t tl = index - 1 - num_cols;
+			size_t tr = index + 1 - num_cols;
+			size_t bl = index - 1 + num_cols;
+			size_t br = index + 1 + num_cols;
+
+			if (grid[index] != 'A') {
+				continue;
+			}
+
+			if (
+				!(grid[tl] == 'M' && grid[br] == 'S') &&
+				!(grid[tl] == 'S' && grid[br] == 'M')
+			) {
+				continue;
+			}
+
+			if (
+				!(grid[bl] == 'M' && grid[tr] == 'S') &&
+				!(grid[bl] == 'S' && grid[tr] == 'M')
+			) {
+				continue;
+			}
+
+			display[index] = grid[index];
+			display[tl]    = grid[tl];
+			display[tr]    = grid[tr];
+			display[bl]    = grid[bl];
+			display[br]    = grid[br];
 			++count;
 		}
 	}
