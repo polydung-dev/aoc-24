@@ -5,19 +5,13 @@
 
 #include <stddef.h>
 
-struct DA_string {
-	char** data;
-	size_t size;
-	size_t capacity;
-};
-
 /**
  * Reads a file and splits each line into a dynamic array.
  *
  * @param [in]    path
- * @param [inout] lines
+ * @param [inout] lines [elem_type -> char*]
  */
-void read_lines(const char* path, struct DA_string* lines);
+void read_lines(const char* path, da_type* lines);
 
 /**
  * @file

@@ -6,44 +6,35 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct Rule {
+struct Pair_int {
 	int first;
 	int second;
 };
 
-struct DA_rule {
-	struct Rule* data;
-	size_t size;
-	size_t capacity;
-};
-
-struct DA_int {
-	int* data;
-	size_t size;
-	size_t capacity;
-};
-
-struct DA_da_int {
-	struct DA_int** data;
-	size_t size;
-	size_t capacity;
-};
+/**
+ * Converts each `char*` to a `struct Pair_int`, within the given index range.
+ *
+ * The number of elements converted will be equal to `end - begin`.
+ *
+ * @param [inout] dst	[elem_type -> struct Pair_int]
+ * @param [inout] src	[elem_type -> char*]
+ * @param         begin	start index (inclusive)
+ * @param         end	end index (exclusive)
+ */
+void convert_to_rules(da_type* dst, da_type* src, size_t begin, size_t end);
 
 /**
- * Split array in two at the index.
- *
- * @param [inout] dst	will contain elements from `index` onwards
- * @param [inout] src	will contain elements up to (but not including) `index`
+* Converts each `char*` to a DynamicArray of int, within the given index range.
+*
+* The number of elements converted will be equal to `end - begin`.
+*
+* @param [inout] dst	[elem_type -> da_type [elem_type -> int]]
+* @param [inout] src	[elem_type -> char*]
+* @param         begin	start index (inclusive)
+* @param         end	end index (exclusive)
  */
-void split_array(struct DA_string* dst, struct DA_string* src, size_t index);
-
-void convert_to_rules(
-	struct DA_rule* rules, struct DA_string* src,
-	size_t begin, size_t end
-);
 void convert_to_page_lists(
-	struct DA_da_int* page_lists, struct DA_string* src,
-	size_t begin, size_t end
+	da_type* dst, da_type* src, size_t begin, size_t end
 );
 
 /**
@@ -52,53 +43,58 @@ void convert_to_page_lists(
  * @returns	0 on success
  * @returns	non-zero on failure
  */
-int verify_pages(struct DA_int* page_list, struct DA_rule* rules);
+int verify_pages(da_type* page_list, da_type* rules);
 
 int main(void) {
-	struct DA_string* lines = NULL;
-	struct DA_rule*   rules = NULL;
-	struct DA_da_int* page_lists = NULL;
+	int rv = 0;
+	da_type* lines = da_create(sizeof(char*));
+	da_type* rules = da_create(sizeof(struct Pair_int));
+	da_type* page_lists = da_create(sizeof(da_type*));
+
 	size_t i = 0;
 	size_t break_point = 0;
 	size_t sum = 0;
 
-	da_create(lines);
+	da_set_free_fn(lines, &free);
+	da_set_free_fn(page_lists, &da_destroy);
+
 	read_lines("./data/test.txt", lines);
 
 	/* find blank line splitting data */
-	for (i = 0; i < lines->size; ++i) {
-		if (strlen(lines->data[i]) == 0) {
+	for (i = 0; i < da_size(lines); ++i) {
+		char* s = *(char**)da_at(lines, i);
+		if (strlen(s) == 0) {
 			break_point = i;
 			break;
 		}
 	}
 	if (break_point == 0) {
 		fprintf(stderr, "blank line not found\n");
-		exit(1);
+		rv = 1;
+		goto exit;
 	}
-
-	printf("break point at line %li\n", break_point + 1);
+	printf("break point at line %li\n\n", break_point + 1);
 
 	/* convert data */
-	da_create(rules);
 	convert_to_rules(rules, lines, 0, break_point);
-	da_create(page_lists);
-	convert_to_page_lists(page_lists, lines, break_point + 1, lines->size);
+	convert_to_page_lists(
+		page_lists, lines, break_point + 1, da_size(lines)
+	);
 
 	/* verify page lists */
-	for (i = 0; i < page_lists->size; ++i) {
+	for (i = 0; i < da_size(page_lists); ++i) {
 		char* s = NULL;
 		size_t mid = 0;
-		struct DA_int* list = page_lists->data[i];
+		da_type* list = *(da_type**)da_at(page_lists, i);
 
 		printf("Verifying page list: ");
-		da_print(list, "%i");
+		da_print(list, "%i", int);
 
 		/* all rules ok */
 		if (verify_pages(list, rules) == 0) {
 			printf("ok!\n");
-			mid = list->size / 2;
-			sum += list->data[mid];
+			mid = da_size(list) / 2;
+			sum += *(int*)da_at(list, mid);
 		}
 
 		printf("\n");
@@ -108,101 +104,95 @@ int main(void) {
 
 	printf("Output -> %lu\n", sum);
 
-	da_destroy_fn(page_lists, da_destroy);
+exit:
+	da_destroy(page_lists);
 	da_destroy(rules);
-	da_destroy_fn(lines, free);
-	return 0;
+	da_destroy(lines);
+
+	return rv;
 }
 
-void split_array(struct DA_string* dst, struct DA_string* src, size_t index) {
-	size_t count = src->size - index;
-
-	/* copy string pointers over */
-	dst->size = count;
-	da_resize(dst, count);
-	memcpy(dst->data, src->data + index, count*sizeof(src->data[0]));
-
-	/* remove from old array */
-	src->size -= (count);
-	memset(src->data + index, 0, count);
-	da_resize(src, count);
-}
-
-void convert_to_rules(
-	struct DA_rule* rules, struct DA_string* src,
-	size_t begin, size_t end
-) {
+void convert_to_rules(da_type* dst, da_type* src, size_t begin, size_t end) {
 	size_t i = 0;
-	struct Rule rule = {0};
+	struct Pair_int pair = {0};
 
 	for (i = begin; i < end; ++i) {
 		char* s = NULL;
-		/* strtok modifies the string */
-		char* str = malloc(strlen(src->data[i]) + 1);
-		strcpy(str, src->data[i]);
+		/* strtok modifies the string, so take a copy */
+		char* in_copy = *(char**)da_at(src, i);
+		char* str = malloc(strlen(in_copy) + 1);
+		strcpy(str, in_copy);
 
 		s = strtok(str, "|");
-		rule.first = atoi(s);
+		pair.first = atoi(s);
 		s = strtok(NULL, "|");
-		rule.second = atoi(s);
+		pair.second = atoi(s);
 
-		da_append(rules, rule);
+		da_append(dst, &pair);
 		free(str);
 	}
 }
-void convert_to_page_lists(
-	struct DA_da_int* page_lists, struct DA_string* src,
-	size_t begin, size_t end
-) {
 
+void convert_to_page_lists(
+	da_type* dst, da_type* src, size_t begin, size_t end
+) {
 	size_t i = 0;
-	struct DA_int* da = NULL;
+	da_type* da = NULL;
 
 	for (i = begin; i < end; ++i) {
 		char* s = NULL;
-		/* strtok modifies the string */
-		char* str = malloc(strlen(src->data[i]) + 1);
-		strcpy(str, src->data[i]);
+		/* strtok modifies the string, so take a copy */
+		char* in_copy = *(char**)da_at(src, i);
+		char* str = malloc(strlen(in_copy) + 1);
+		strcpy(str, in_copy);
 
-		da_create(da);
-
+		da = da_create(sizeof(int));
 		s = strtok(str, ",");
 		while (s != NULL) {
-			da_append(da, atoi(s));
+			int n = atoi(s);
+			da_append(da, &n);
 			s = strtok(NULL, ",");
 		}
 
-		da_append(page_lists, da);
+		da_append(dst, &da);
 		free(str);
 	}
 }
 
-int verify_pages(struct DA_int* list, struct DA_rule* rules) {
+int verify_pages(da_type* list, da_type* rules) {
 	size_t i = 0;
-	int idx_a = -1;
-	int idx_b = -1;
+	void* ptr_a = NULL;
+	void* ptr_b = NULL;
 
-	/* check each rule one by one */
-	for (i = 0; i < rules->size; ++i) {
-		da_find(list, rules->data[i].first, idx_a);
-		da_find(list, rules->data[i].second, idx_b);
+	for (i = 0; i < da_size(rules); ++i) {
+		struct Pair_int* pair = da_at(rules, i);
+		ptr_a = da_find(
+			list, da_begin(list), da_end(list), &pair->first
+		);
+		ptr_b = da_find(
+			list, da_begin(list), da_end(list), &pair->second
+		);
 
-		/* no match */
-		if (idx_a == -1 || idx_b == -1) {
+		/* error */
+		if (ptr_a == NULL || ptr_b == NULL) {
 			continue;
 		}
 
-		if (idx_a > idx_b) {
+		/* no match */
+		if (ptr_a == da_end(list) || ptr_b == da_end(list)) {
+			continue;
+		}
+
+
+		if (ptr_a > ptr_b) {
 			printf(
 				"failed on rule %i|%i\n",
-				rules->data[i].first,
-				rules->data[i].second
+				pair->first, pair->second
 			);
 			return 1;
 		}
-
 	}
 
 	/* all rules ok */
-	return (i != rules->size);
+	return 0;
 }

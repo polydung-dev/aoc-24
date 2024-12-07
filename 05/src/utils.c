@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void read_lines(const char* path, struct DA_string* lines) {
+void read_lines(const char* path, da_type* lines) {
 	size_t buf_sz = 256;
 	char* buf = NULL;
 	FILE* fp = NULL;
@@ -42,7 +42,7 @@ void read_lines(const char* path, struct DA_string* lines) {
 		strcpy(s, buf);
 		r_strip(s, "\n");
 
-		da_append(lines, s);
+		da_append(lines, &s);
 	}
 
 	fclose(fp);
