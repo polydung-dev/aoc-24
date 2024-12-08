@@ -12,7 +12,7 @@ all: out/ $(filenames)
 out/aoc-24-04: src/04/main.c
 	$(CC) $(CFLAGS) -o $@ $(filter-out out/,$^)
 
-out/aoc-24-%: src/%/main.c src/common/da2.c src/common/utils.c
+out/aoc-24-%: src/%/main.c src/common/da.c src/common/utils.c
 	$(CC) $(CFLAGS) -o $@ $(filter-out out/,$^)
 
 .PHONY: clean
