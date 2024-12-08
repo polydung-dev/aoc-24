@@ -2,9 +2,20 @@
 
 For this years [AoC][] I will be writing in C89. This may be a msitake.
 
-Each day will be in its own directory (zero-padded day number), and built with
-`make`. This will produce an executable in the working directory with the name
-`aoc-24-<day>` where `<day>` is the two digit zero-padded day.
+## Building
+
+```
+$ make
+```
+
+This command will produce an executable in `out/` named `aoc-24-<day>` for each
+day that I have completed so far.
+
+Each day has its own directory under `src/` which contains the day-specific code
+along with a `readme.md` which links to the AoC page for that day along with
+the results for the test input (located under `data/`).
+
+Common code used by multiple days can be found under `src/common/`.
 
 ## Things that I like about C89 (so far)
 

@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+const char filename[] = "./data/03/test.txt";
+
 #define ARRAY_SIZE(arr) sizeof((arr)) / sizeof((arr)[0])
 
 enum NodeType {
@@ -44,7 +46,7 @@ int main(void) {
 	int controlled_sum = 0;
 	int do_sum = 1;
 
-	buf = read_file("./data/test.txt");
+	buf = read_file(filename);
 	parse_data(buf, &output);
 	free(buf);
 

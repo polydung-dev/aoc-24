@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+const char filename[] = "./data/02/test.txt";
+
 struct DA_int {
 	int* data;
 	size_t size;
@@ -40,7 +42,7 @@ int main(void) {
 
 	da_create(reports);
 
-	load_from_file("./data/test.txt", reports);
+	load_from_file(filename, reports);
 
 	printf("Number of reports to check: %lu\n", reports->size);
 
