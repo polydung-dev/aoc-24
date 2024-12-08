@@ -3,8 +3,6 @@
 [Day 1][]
 
 ```
-$ make
-$ ./aoc-24-01
 Sum of differences: 11
 Similarity score: 31
 ```

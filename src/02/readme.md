@@ -3,8 +3,6 @@
 [Day 2][]
 
 ```
-$ make
-$ ./aoc-24-02
 Number of safe reports: 2
 Number of safe reports (with damper): 4
 ```
