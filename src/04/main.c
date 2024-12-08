@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+const char filename[] = "./data/04/test.txt";
+
 struct DA_string {
 	char** data;
 	size_t size;
@@ -73,13 +75,13 @@ int main(void) {
 	char* output = NULL;
 
 	da_create(lines);
-	read_lines("./data/test.txt", lines);
+	read_lines(filename, lines);
 
 	/* assuming all lines are equal in length! */
 	num_cols = strlen(lines->data[0]);
 	num_rows = lines->size;
 
-	printf("%lu x %lu grid\n", num_cols, num_rows);
+	printf("%lu x %lu grid\n\n", num_cols, num_rows);
 	grid_size = num_cols * num_rows;
 
 	/* convert lines into a flat array */
@@ -105,7 +107,7 @@ int main(void) {
 		printf("%.*s\n", (int)num_cols, output + (i * num_cols));
 	}
 
-	printf("XMAS count == %lu\n", count);
+	printf("XMAS count == %lu\n\n", count);
 
 	/* part 2 */
 	memset(output, '.', grid_size);
@@ -116,7 +118,7 @@ int main(void) {
 		printf("%.*s\n", (int)num_cols, output + (i * num_cols));
 	}
 
-	printf("X-MAS count == %lu\n", count);
+	printf("X-MAS count == %lu\n\n", count);
 
 
 	for (i = 0; i < lines->size; ++i) {
