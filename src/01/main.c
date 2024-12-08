@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+const char filename[] = "./data/01/test.txt";
+
 struct DA_int {
 	int* data;
 	size_t size;
@@ -42,7 +44,7 @@ int main(void) {
 	da_create(left);
 	da_create(right);
 
-	load_from_file("./data/test.txt", left, right);
+	load_from_file(filename, left, right);
 
 	qsort(left->data, left->size, sizeof(left->data[0]), &cmp_int);
 	qsort(right->data, right->size, sizeof(right->data[0]), &cmp_int);
