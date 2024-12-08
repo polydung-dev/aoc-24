@@ -5,7 +5,9 @@
 ```
 $ make
 $ ./aoc-24-05
-Output -> 143
+Output 1 -> 143
+Output 2 -> 123
+
 ```
 
 Having the loop counter variable exist outside of the loops scope causes a

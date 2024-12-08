@@ -12,7 +12,7 @@
  * - element "constructor"
  * - front/back/data accessors
  * - shrink_to_fit?
- * - clear/insert/erase
+ * - clear
  * - better type safety (check sizes, __typeof__)
  * - generic container base? (deque)
  * - iterators proper
@@ -155,6 +155,46 @@ da_status_type da_reserve_(
 #define da_append(da, value) da_append_(__FILE__, __LINE__, da, value)
 void da_append_(const char* file, size_t line, da_type* da, void* value);
 
+/**
+ * Inserts an element into the array before the given position.
+ *
+ * Data is copied over from the memory location pointed to.
+ *
+ * @param [inout] da   	some pointer returned by `da_create()`
+ * @param [in]    pos  	a pointer to an element within the array
+ * @param [in]    value	a pointer the value of the element to append
+ *
+ * @returns	success -> pointer to inserted element
+ * @returns	failure -> NULL
+ *
+ * Possible Error Values
+ * - `DA_OK`
+ * - `DA_OUT_OF_BOUNDS`
+ * - `DA_OUT_OF_MEMORY`
+ */
+#define da_insert(da, pos, value) da_insert_(__FILE__, __LINE__, da, pos, value)
+void* da_insert_(
+	const char* file, size_t line,
+	da_type* da, void* pos, void* value
+);
+
+/**
+ * Erases an element from the array.
+ *
+ * Note: the array is not resized.
+ *
+ * @param [inout] da   	some pointer returned by `da_create()`
+ * @param [in]    pos  	a pointer to an element within the array
+ *
+ * @returns	success -> pointer to the element after the one erased
+ * @returns	failure -> NULL
+ *
+ * Possible Error Values
+ * - `DA_OK`
+ * - `DA_OUT_OF_BOUNDS`
+ */
+#define da_erase(da, pos) da_erase_(__FILE__, __LINE__, da, pos)
+void* da_erase_(const char* file, size_t line, da_type* da, void* pos);
 
 /*///////////////////////////////////////////////////////////////////////////*/
 /* Utility                                                                   */

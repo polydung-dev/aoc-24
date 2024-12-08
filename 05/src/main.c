@@ -40,10 +40,24 @@ void convert_to_page_lists(
 /**
  * Verifies that the pages are in order, according to the rules.
  *
+ * @param [in]    page_list
+ * @param [in]    rules
+ *
  * @returns	0 on success
  * @returns	non-zero on failure
  */
 int verify_pages(da_type* page_list, da_type* rules);
+
+/**
+ * Sorts the page list so, according to the rules.
+ *
+ * @param [inout] page_list
+ * @param [in]    rules
+ *
+ * @returns	0 on success
+ * @returns	non-zero on failure
+ */
+int sort_pages(da_type* page_list, da_type* rules);
 
 int main(void) {
 	int rv = 0;
@@ -53,7 +67,8 @@ int main(void) {
 
 	size_t i = 0;
 	size_t break_point = 0;
-	size_t sum = 0;
+	size_t sum1 = 0;
+	size_t sum2 = 0;
 
 	da_set_free_fn(lines, &free);
 	da_set_free_fn(page_lists, &da_destroy);
@@ -94,7 +109,19 @@ int main(void) {
 		if (verify_pages(list, rules) == 0) {
 			printf("ok!\n");
 			mid = da_size(list) / 2;
-			sum += *(int*)da_at(list, mid);
+			sum1 += *(int*)da_at(list, mid);
+		} else {
+			printf("Sorting page list...\n");
+
+			/* some lists may need multiple passes */
+			/* hopefully all page lists _can_ be sorted... */
+			do {
+				sort_pages(list, rules);
+			} while (verify_pages(list, rules) != 0);
+
+			da_print(list, "%i", int);
+			mid = da_size(list) / 2;
+			sum2 += *(int*)da_at(list, mid);
 		}
 
 		printf("\n");
@@ -102,7 +129,8 @@ int main(void) {
 		free(s);
 	}
 
-	printf("Output -> %lu\n", sum);
+	printf("Output 1 -> %lu\n", sum1);
+	printf("Output 2 -> %lu\n", sum2);
 
 exit:
 	da_destroy(page_lists);
@@ -190,6 +218,54 @@ int verify_pages(da_type* list, da_type* rules) {
 				pair->first, pair->second
 			);
 			return 1;
+		}
+	}
+
+	/* all rules ok */
+	return 0;
+}
+
+int sort_pages(da_type* list, da_type* rules) {
+	size_t i = 0;
+	void* ptr_a = NULL;
+	void* ptr_b = NULL;
+
+	for (i = 0; i < da_size(rules); ++i) {
+		struct Pair_int* pair = da_at(rules, i);
+		ptr_a = da_find(
+			list, da_begin(list), da_end(list), &pair->first
+		);
+		ptr_b = da_find(
+			list, da_begin(list), da_end(list), &pair->second
+		);
+
+		/* error */
+		if (ptr_a == NULL || ptr_b == NULL) {
+			continue;
+		}
+
+		/* no match */
+		if (ptr_a == da_end(list) || ptr_b == da_end(list)) {
+			continue;
+		}
+
+		/* move "b" just after "a" */
+		if (ptr_a > ptr_b) {
+			/* "insert" may invalidate pointers */
+			char* old = da_begin(list);
+			char* new = NULL;
+
+			da_insert(list, ptr_a, ptr_b);
+			new = da_begin(list);
+
+			if (new != old) {
+				ptr_b = (char*)ptr_b + (old - new);
+			}
+
+			da_erase(list, ptr_b);
+			/**/
+			printf("rule %i|%i -> ", pair->first, pair->second);
+			da_print(list, "%i", int);
 		}
 	}
 

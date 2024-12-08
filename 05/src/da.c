@@ -160,6 +160,73 @@ void da_append_(const char* file, size_t line, da_type* da, void* value) {
 	++da->size;
 }
 
+void* da_insert_(
+	const char* file, size_t line, da_type* da, void* pos, void* value
+) {
+	char* dst = NULL;
+	char* src = pos;
+	/* need to update src if rellocation occurs */
+	char* old = da->data;
+	ptrdiff_t diff = 0;
+
+	da->status = DA_OK;
+	da->file   = file;
+	da->line   = line;
+
+	if (da->size == da->capacity) {
+		da_reserve_(file, line, da, da->capacity * DA_SCALE_FACTOR);
+
+		/* pass error back up to caller */
+		if (da->status != DA_OK) {
+			return NULL;
+		}
+
+		diff = (char*)da->data - old;
+	}
+
+	/* update pointer to new value */
+	if (diff != 0) {
+		src += diff;
+	}
+
+	/* move elements up */
+	dst = src + da->elem_size;
+	diff = (char*)da_end(da) - src;
+	memmove(dst, src, diff);
+
+	/* insert new element */
+	memcpy(dst, value, da->elem_size);
+	++da->size;
+
+	return src;
+}
+
+void* da_erase_(const char* file, size_t line, da_type* da, void* pos) {
+	char* dst = NULL;
+	char* src = pos;
+	size_t n = 0;
+
+	da->status = DA_OK;
+	da->file   = file;
+	da->line   = line;
+
+	/* move elements down */
+	dst = pos;
+	src = (char*)pos + da->elem_size;
+	n = (char*)da_end(da) - src;
+	memmove(dst, src, n);
+
+	/* erase last element */
+	if (da->destructor != NULL) {
+		da->destructor((char*)da_end(da) - da->elem_size);
+	} else {
+		memset((char*)da_end(da) - da->elem_size, 0, da->elem_size);
+	}
+	--da->size;
+
+	return src;
+}
+
 /*///////////////////////////////////////////////////////////////////////////*/
 /* Utility                                                                   */
 /*///////////////////////////////////////////////////////////////////////////*/
