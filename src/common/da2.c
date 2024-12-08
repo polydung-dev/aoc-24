@@ -231,6 +231,32 @@ void* da_erase_(const char* file, size_t line, da_type* da, void* pos) {
 /* Utility                                                                   */
 /*///////////////////////////////////////////////////////////////////////////*/
 
+void da_print(da_type* da, struct DAPrinterConfig* config) {
+	size_t i = 0;
+
+	if (config->open != NULL) {
+		printf("%s", config->open);
+	}
+
+	for (i = 0; i < da->size; ++i) {
+		if (config->prefix != NULL) {
+			printf("%s", config->prefix);
+		}
+
+		config->printer(da, i);
+
+		if (config->sep != NULL) {
+			if (i + 1 < da->size) {
+				printf("%s", config->sep);
+			}
+		}
+	}
+
+	if (config->close != NULL) {
+		printf("%s", config->close);
+	}
+}
+
 void* da_find_(
 	const char* file, size_t line,
 	da_type* da, void* first, void* last, void* value

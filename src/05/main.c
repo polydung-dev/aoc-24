@@ -61,6 +61,11 @@ int verify_pages(da_type* page_list, da_type* rules);
  */
 int sort_pages(da_type* page_list, da_type* rules);
 
+da_printer_fn int_printer;
+struct DAPrinterConfig int_printer_conf = {
+	&int_printer, "[", ", ", "]\n", NULL
+};
+
 int main(void) {
 	int rv = 0;
 	da_type* lines = da_create(sizeof(char*));
@@ -105,7 +110,7 @@ int main(void) {
 		da_type* list = *(da_type**)da_at(page_lists, i);
 
 		printf("Verifying page list: ");
-		da_print(list, "%i", int);
+		da_print(list, &int_printer_conf);
 
 		/* all rules ok */
 		if (verify_pages(list, rules) == 0) {
@@ -121,7 +126,7 @@ int main(void) {
 				sort_pages(list, rules);
 			} while (verify_pages(list, rules) != 0);
 
-			da_print(list, "%i", int);
+			da_print(list, &int_printer_conf);
 			mid = da_size(list) / 2;
 			sum2 += *(int*)da_at(list, mid);
 		}
@@ -140,6 +145,10 @@ exit:
 	da_destroy(lines);
 
 	return rv;
+}
+
+void int_printer(da_type* da, size_t index) {
+	printf("%i", *(int*)da_at(da, index));
 }
 
 void convert_to_rules(da_type* dst, da_type* src, size_t begin, size_t end) {
@@ -267,7 +276,7 @@ int sort_pages(da_type* list, da_type* rules) {
 			da_erase(list, ptr_b);
 			/**/
 			printf("rule %i|%i -> ", pair->first, pair->second);
-			da_print(list, "%i", int);
+			da_print(list, &int_printer_conf);
 		}
 	}
 

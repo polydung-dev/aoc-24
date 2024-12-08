@@ -200,19 +200,28 @@ void* da_erase_(const char* file, size_t line, da_type* da, void* pos);
 /* Utility                                                                   */
 /*///////////////////////////////////////////////////////////////////////////*/
 
-#define da_print(da, fmt, type)                                               \
-do {                                                                          \
-	size_t idx = 0;                                                       \
-	printf("[");                                                          \
-	for (idx = 0; idx < da_size(da); ++idx) {                             \
-		type x = *(type*)da_at((da), idx);                            \
-		printf(fmt, x);                                               \
-		if (idx + 1 < da_size(da)) {                                  \
-			printf(", ");                                         \
-		}                                                             \
-	}                                                                     \
-	printf("]\n");                                                        \
-} while (0)
+/**
+ * Function to print a single element of an array.
+ */
+typedef void da_printer_fn(da_type* da, size_t index);
+
+/**
+ * Array printer configuration.
+ *
+ * Any of the strings may be NULL.
+ */
+struct DAPrinterConfig {
+	da_printer_fn* printer;
+	char* open;   /* prefix for array  e.g. `[` */
+	char* sep;    /* element separator e.g. `, ` */
+	char* close;  /* suffix for array  e.g. `]` */
+	char* prefix; /* element prefix*/
+};
+
+/**
+ * Prints an array.
+ */
+void da_print(da_type* da, struct DAPrinterConfig* config);
 
 /**
  * Finds the first element in the array with the given value within the
