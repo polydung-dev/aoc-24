@@ -1,10 +1,12 @@
-#include "da.h"
+#include "da2.h"
 #include "utils.h"
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+const char filename[] = "./data/05/test.txt";
 
 struct Pair_int {
 	int first;
@@ -73,7 +75,7 @@ int main(void) {
 	da_set_free_fn(lines, &free);
 	da_set_free_fn(page_lists, &da_destroy);
 
-	read_lines("./data/test.txt", lines);
+	read_lines(filename, lines);
 
 	/* find blank line splitting data */
 	for (i = 0; i < da_size(lines); ++i) {

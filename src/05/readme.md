@@ -3,8 +3,6 @@
 [Day 5][]
 
 ```
-$ make
-$ ./aoc-24-05
 Output 1 -> 143
 Output 2 -> 123
 
