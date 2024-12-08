@@ -14,11 +14,10 @@ struct DAPrinterConfig string_printer_conf = {
 };
 
 #define cursor_up    '^'
-#define cursor_left  '>'
+#define cursor_left  '<'
 #define cursor_down  'v'
-#define cursor_right '<'
+#define cursor_right '>'
 #define wall_char    '#'
-#define visited_char 'X'
 
 /**
  * @param [in]    da
@@ -48,11 +47,10 @@ int advance_cursor(da_type* da, size_t* x, size_t* y);
  * Counts the number of times the given char appears.
  *
  * @param [in]    da
- * @param         c 	char to find
  *
  * @returns	char count
  */
-int count_chars(da_type* da, char c);
+int count_chars(da_type* da);
 
 int main(void) {
 	da_type* lines = da_create(sizeof(char*));
@@ -68,15 +66,14 @@ int main(void) {
 	printf("Start index (from top-left) == %lu, %lu\n\n", x, y);
 
 	while (advance_cursor(lines, &x, &y) == 0) {
-		/* do nothing */
+		printf("--------------------------------------------------\n");
+		da_print(lines, &string_printer_conf);
 	}
 
+	printf("--------------------------------------------------\n");
 	da_print(lines, &string_printer_conf);
 	printf("Finish index (from top-left) == %lu, %lu\n\n", x, y);
-	printf(
-		"Unique Tiles Visited -> %i\n",
-		count_chars(lines, visited_char)
-	);
+	printf("Unique Tiles Visited -> %i\n", count_chars(lines));
 
 	da_destroy(lines);
 	return 0;
@@ -108,13 +105,12 @@ void find_char(da_type* da, char c, size_t* x, size_t* y) {
 #define check_and_move(da, axis, bound, xoff, yoff, c)                        \
 do {                                                                          \
 	if (*axis == bound) {                                                 \
-		set_char(da, *x, *y, visited_char);                           \
+		set_char(da, *x, *y, c);                                      \
 		return 1;                                                     \
 	}                                                                     \
 	if (check_char(da, *x + xoff, *y + yoff, wall_char)) {                \
 		goto rotate;                                                  \
 	}                                                                     \
-	set_char(da, *x, *y, visited_char);                                   \
 	*x += xoff;                                                           \
 	*y += yoff;                                                           \
 	set_char(da, *x, *y, c);                                              \
@@ -132,7 +128,7 @@ int advance_cursor(da_type* da, size_t* x, size_t* y) {
 			break;
 
 		case cursor_left:
-			check_and_move(da, x, max_col, 1, 0, cursor_left);
+			check_and_move(da, x, 0, -1, 0, cursor_left);
 			break;
 
 		case cursor_down:
@@ -140,7 +136,7 @@ int advance_cursor(da_type* da, size_t* x, size_t* y) {
 			break;
 
 		case cursor_right:
-			check_and_move(da, x, 0, -1, 0, cursor_right);
+			check_and_move(da, x, max_col, 1, 0, cursor_right);
 			break;
 
 		default:
@@ -154,26 +150,26 @@ exit:
 rotate:
 	switch (c) {
 		case cursor_up:
-			set_char(da, *x, *y, cursor_left);
-			break;
-
-		case cursor_left:
-			set_char(da, *x, *y, cursor_down);
-			break;
-
-		case cursor_down:
 			set_char(da, *x, *y, cursor_right);
 			break;
 
-		case cursor_right:
+		case cursor_left:
 			set_char(da, *x, *y, cursor_up);
+			break;
+
+		case cursor_down:
+			set_char(da, *x, *y, cursor_left);
+			break;
+
+		case cursor_right:
+			set_char(da, *x, *y, cursor_down);
 			break;
 	}
 
 	goto exit;
 }
 
-int count_chars(da_type* da, char c) {
+int count_chars(da_type* da) {
 	int count = 0;
 
 	size_t row = 0;
@@ -183,7 +179,16 @@ int count_chars(da_type* da, char c) {
 		char* line = *(char**)da_at(da, row);
 
 		for (col = 0; col < strlen(line); ++col) {
-			if (line[col] == c) {
+			if (line[col] == cursor_up) {
+				++count;
+			}
+			if (line[col] == cursor_right) {
+				++count;
+			}
+			if (line[col] == cursor_down) {
+				++count;
+			}
+			if (line[col] == cursor_left) {
 				++count;
 			}
 		}
