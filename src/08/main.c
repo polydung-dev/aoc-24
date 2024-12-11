@@ -79,7 +79,12 @@ int main(void) {
 
 		for (j = 0; j < da_size(freq_nodes); ++j) {
 			struct Pos pair = da_get_as(freq_nodes, j, struct Pos);
-			da_get_as(towers, pair.y, char*)[pair.x] = '#';
+			/* leave tower on map */
+			char* c = &da_get_as(towers, pair.y, char*)[pair.x];
+			if (*c != f) {
+				*c = '#';
+			}
+
 			da_get_as(node_map, pair.y, char*)[pair.x] = '#';
 		}
 
@@ -104,7 +109,7 @@ int main(void) {
 	}
 
 	printf("--------------------------------------------------\n");
-	printf("Number of anti-nodes: %lu\n", count);
+	printf("Number of anti-nodes (with harmonics): %lu\n", count);
 	printf("--------------------------------------------------\n");
 	da_print(node_map, &printer_config);
 
@@ -225,23 +230,29 @@ da_type* calculate_nodes(da_type* lines) {
 
 			delta.x  = t1_pos.x - t2_pos.x;
 			delta.y  = t1_pos.y - t2_pos.y;
-			n1_pos.x = t1_pos.x + delta.x;
-			n1_pos.y = t1_pos.y + delta.y;
-			n2_pos.x = t2_pos.x - delta.x;
-			n2_pos.y = t2_pos.y - delta.y;
 
-			if (
+			n1_pos.x = t1_pos.x;
+			n1_pos.y = t1_pos.y;
+			while (
 				n1_pos.x >= 0 && n1_pos.x < max_x &&
 				n1_pos.y >= 0 && n1_pos.y < max_y
 			) {
 				da_append(nodes, &n1_pos);
+
+				n1_pos.x += delta.x;
+				n1_pos.y += delta.y;
 			}
 
-			if (
+			n2_pos.x = t2_pos.x;
+			n2_pos.y = t2_pos.y;
+			while (
 				n2_pos.x >= 0 && n2_pos.x < max_x &&
 				n2_pos.y >= 0 && n2_pos.y < max_y
 			) {
 				da_append(nodes, &n2_pos);
+
+				n2_pos.x -= delta.x;
+				n2_pos.y -= delta.y;
 			}
 		}
 	}
