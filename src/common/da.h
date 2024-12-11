@@ -100,9 +100,10 @@ void da_destroy(void* da);
 #define da_at(da, index) da_at_(__FILE__, __LINE__, da, index)
 void* da_at_(const char* file, size_t line, da_type* da, size_t index);
 
-
-
-#define da_get_as(da, index, type) *(type*)da_at(da, index)
+/**
+ * Returns an element with type conversion.
+ */
+#define da_get_as(da, index, type) (*(type*)da_at(da, index))
 
 /*///////////////////////////////////////////////////////////////////////////*/
 /* Iterators                                                                 */
