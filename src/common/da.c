@@ -19,7 +19,7 @@ struct DynamicArray {
 	size_t         line;
 };
 
-void da_set_free_fn(da_type* da, destructor_fn* fn) {
+void da_set_destructor(da_type* da, destructor_fn* fn) {
 	da->destructor = fn;
 }
 

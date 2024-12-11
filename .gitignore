@@ -1,2 +1,4 @@
+build/
+out/
+
 *input.txt
-*aoc-24*

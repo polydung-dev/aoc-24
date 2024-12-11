@@ -1,19 +1,28 @@
 warnings=-Wall -Wextra -pedantic
 sanitize=-fsanitize=address,undefined,leak -fno-omit-frame-pointer
 CFLAGS=$(warnings) $(sanitize) -g3 -O3 -std=c89 -I./src/common
+LDFLAGS=$(sanitize)
+LDLIBS=-lm
 
-SHELL=bash
-filenames=$(addprefix out/aoc-24-,$(shell echo {01..06}))
-all: out/ $(filenames)
+common_sources=$(wildcard src/common/*.c)
+common_objects=$(patsubst src/%,build/%,$(common_sources:.c=.o))
+
+main_sources=$(wildcard src/*/main.c)
+main_objects=$(patsubst src/%,build/%,$(main_sources:.c=.o))
+dirs=$(sort $(dir $(common_objects)) $(dir $(main_objects)))
+
+binaries=$(patsubst src/%/main.c,out/aoc-24-%,$(main_sources))
+
+all: out/ $(dirs) $(binaries)
 
 %/:
 	mkdir -p $@
 
-out/aoc-24-04: src/04/main.c
-	$(CC) $(CFLAGS) -o $@ $(filter-out out/,$^)
+out/aoc-24-%: build/%/main.o $(common_objects)
+	$(CC) $(LDFLAGS) -o $@ $(filter-out out/,$^) $(LDLIBS)
 
-out/aoc-24-%: src/%/main.c src/common/da.c src/common/utils.c
-	$(CC) $(CFLAGS) -o $@ $(filter-out out/,$^)
+build/%.o: src/%.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ -c $<
 
 .PHONY: clean
 clean:

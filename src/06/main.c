@@ -57,7 +57,7 @@ int main(void) {
 	size_t x = 0;
 	size_t y = 0;
 
-	da_set_free_fn(lines, &free);
+	da_set_destructor(lines, &free);
 
 	read_lines(filename, lines);
 	da_print(lines, &string_printer_conf);

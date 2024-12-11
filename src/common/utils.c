@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "str.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -40,52 +41,11 @@ void read_lines(const char* path, da_type* lines) {
 		/* strings must be free'd by the caller */
 		s = malloc(strlen(buf) + 1);
 		strcpy(s, buf);
-		r_strip(s, "\n");
+		str_r_strip(s, "\n");
 
 		da_append(lines, &s);
 	}
 
 	fclose(fp);
 	free(buf);
-}
-
-void r_strip(char* string, char* to_strip) {
-	char* r = NULL;
-	char* c = NULL;
-
-	/* for each char in string (from the end) */
-	for (r = string + strlen(string) - 1; r >= string; --r) {
-		/* for each char to strip */
-		for (c = to_strip; *c != '\0'; ++c) {
-			/* strip char if equal */
-			if (*r == *c) {
-				*r = '\0';
-				break;
-			}
-		}
-		/* stop at first non-strip char */
-		if (*c == '\0') {
-			break;
-		}
-	}
-}
-
-char* join(char* joiner, char** strings, size_t count) {
-	size_t i = 0;
-	size_t sz = 1 + ((count - 1) * strlen(joiner));
-	char* s = NULL;
-	char* p = NULL;
-
-	for (i = 0; i < count; ++i) {
-		sz += strlen(strings[i]);
-	}
-
-	s = calloc(sz, 1);
-	p = s;
-
-	for (i = 0; i < count; ++i) {
-		p = strcpy(p, strings[i]);
-	}
-
-	return s;
 }

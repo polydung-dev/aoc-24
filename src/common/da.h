@@ -32,7 +32,13 @@ typedef enum DynamicArray_Status {
 
 typedef struct DynamicArray da_type;
 
-typedef void destructor_fn(void* fn);
+/**
+ * A "destructor" function acts to free memory allocated to a single object in
+ * the array. This function will be called once per object.
+ *
+ * This is only requried if the has some dynamically allocated memory.
+ */
+typedef void destructor_fn(void* ptr);
 
 /**
  * Sets a function pointer for a "destroctor" for each element which is called
@@ -43,7 +49,7 @@ typedef void destructor_fn(void* fn);
  * @param [inout] da	some pointer returned by `da_create()`
  * @param         fn	pointer to function, or NULL
  */
-void da_set_free_fn(da_type* da, destructor_fn* fn);
+void da_set_destructor(da_type* da, destructor_fn* fn);
 
 /*///////////////////////////////////////////////////////////////////////////*/
 /* DynamicArray                                                              */
@@ -65,11 +71,12 @@ da_type* da_create(size_t elem_size);
  * Frees memory associated with the DynamicArray.
  *
  * Note: Takes the parameter as a `void*` so it can be passed to
- * `da_set_free_fn` for nested arrays.
+ * `da_set_destructor` for nested arrays.
  *
  * @param [inout] da	some pointer returned by `da_create()`
  *
  * @see	`da_create()`
+ * @see	`da_set_destructor()`
  */
 void da_destroy(void* da);
 
@@ -92,6 +99,10 @@ void da_destroy(void* da);
  */
 #define da_at(da, index) da_at_(__FILE__, __LINE__, da, index)
 void* da_at_(const char* file, size_t line, da_type* da, size_t index);
+
+
+
+#define da_get_as(da, index, type) *(type*)da_at(da, index)
 
 /*///////////////////////////////////////////////////////////////////////////*/
 /* Iterators                                                                 */

@@ -1,4 +1,5 @@
-#include "da_legacy.h"
+#include "da.h"
+#include "utils.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -6,12 +7,6 @@
 #include <string.h>
 
 const char filename[] = "./data/04/test.txt";
-
-struct DA_string {
-	char** data;
-	size_t size;
-	size_t capacity;
-};
 
 enum Direction {
 	DIR_NONE  = 0,
@@ -25,8 +20,6 @@ enum Direction {
  * Convert a direction into a string, string must be free'd.
  */
 char* dir_string(enum Direction dir);
-
-void read_lines(const char* path, struct DA_string* lines);
 
 /**
  * Strips all char's in `to_strip` from right side of `string`.
@@ -65,7 +58,7 @@ size_t find_x_mas(
 );
 
 int main(void) {
-	struct DA_string* lines = NULL;
+	da_type* lines = da_create(sizeof(char*));
 	size_t i = 0;
 	size_t num_cols = 0;
 	size_t num_rows = 0;
@@ -74,12 +67,12 @@ int main(void) {
 	char* grid = NULL;
 	char* output = NULL;
 
-	da_create(lines);
+	da_set_destructor(lines, &free);
 	read_lines(filename, lines);
 
 	/* assuming all lines are equal in length! */
-	num_cols = strlen(lines->data[0]);
-	num_rows = lines->size;
+	num_cols = strlen(da_get_as(lines, 0, char*));
+	num_rows = da_size(lines);
 
 	printf("%lu x %lu grid\n\n", num_cols, num_rows);
 	grid_size = num_cols * num_rows;
@@ -87,9 +80,10 @@ int main(void) {
 	/* convert lines into a flat array */
 	output = malloc(grid_size);
 	grid = malloc(grid_size);
-	for (i = 0; i < lines->size; ++i) {
-		memcpy(grid + (i * num_cols), lines->data[i], num_cols);
+	for (i = 0; i < da_size(lines); ++i) {
+		memcpy(grid + (i * num_cols), da_get_as(lines, i, char*), num_cols);
 	}
+
 
 	/* part 1 */
 	memset(output, '.', grid_size);
@@ -119,11 +113,6 @@ int main(void) {
 	}
 
 	printf("X-MAS count == %lu\n\n", count);
-
-
-	for (i = 0; i < lines->size; ++i) {
-		free(lines->data[i]);
-	}
 
 	free(grid);
 	free(output);
@@ -157,50 +146,6 @@ char* dir_string(enum Direction dir) {
 	}
 
 	return s;
-}
-
-void read_lines(const char* path, struct DA_string* lines) {
-	size_t buf_sz = 256;
-	char* buf = NULL;
-	FILE* fp = NULL;
-
-	fp = fopen(path, "r");
-	if (fp == NULL) {
-		fprintf(
-			stderr, "Could not open file `%s`: %s\n",
-			path, strerror(errno)
-		);
-		exit(1);
-	}
-
-	buf = malloc(buf_sz);
-	if (buf == NULL) {
-		fprintf(stderr, "out of memory\n");
-		fclose(fp);
-		free(buf);
-		exit(1);
-	}
-
-	while (fgets(buf, buf_sz, fp) != NULL) {
-		char* s = NULL;
-
-		if ((strlen(buf) + 1) == buf_sz) {
-			fprintf(stderr, "buffer too small\n");
-			fclose(fp);
-			free(buf);
-			exit(1);
-		}
-
-		/* strings must be free'd by the caller */
-		s = malloc(strlen(buf) + 1);
-		strcpy(s, buf);
-		r_strip(s, "\n");
-
-		da_append(lines, s);
-	}
-
-	fclose(fp);
-	free(buf);
 }
 
 void r_strip(char* string, char* to_strip) {
@@ -242,8 +187,8 @@ size_t find_xmas(
 	size_t h_ea = (direction & DIR_SOUTH) ? 3 : 0;
 	size_t v_sa = (direction & DIR_WEST) ? 3 : 0;
 	size_t v_ea = (direction & DIR_EAST) ? 3 : 0;
-	size_t v_off = 0;
-	size_t h_off = 0;
+	int v_off = 0;
+	int h_off = 0;
 
 	if (direction & DIR_NORTH || direction & DIR_SOUTH) {
 		v_off = num_cols * ((direction & DIR_NORTH) ? -1 : 1);

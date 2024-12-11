@@ -77,8 +77,8 @@ int main(void) {
 	size_t sum1 = 0;
 	size_t sum2 = 0;
 
-	da_set_free_fn(lines, &free);
-	da_set_free_fn(page_lists, &da_destroy);
+	da_set_destructor(lines, &free);
+	da_set_destructor(page_lists, &da_destroy);
 
 	read_lines(filename, lines);
 
