@@ -7,7 +7,6 @@
 #include <string.h>
 
 void read_lines(const char* path, da_type* lines) {
-	size_t buf_sz = 256;
 	char* buf = NULL;
 	FILE* fp = NULL;
 
@@ -20,7 +19,7 @@ void read_lines(const char* path, da_type* lines) {
 		exit(1);
 	}
 
-	buf = malloc(buf_sz);
+	buf = malloc(READ_BUFFER_SIZE);
 	if (buf == NULL) {
 		fprintf(stderr, "out of memory\n");
 		fclose(fp);
@@ -28,10 +27,10 @@ void read_lines(const char* path, da_type* lines) {
 		exit(1);
 	}
 
-	while (fgets(buf, buf_sz, fp) != NULL) {
+	while (fgets(buf, READ_BUFFER_SIZE, fp) != NULL) {
 		char* s = NULL;
 
-		if ((strlen(buf) + 1) == buf_sz) {
+		if ((strlen(buf) + 1) == READ_BUFFER_SIZE) {
 			fprintf(stderr, "buffer too small\n");
 			fclose(fp);
 			free(buf);
