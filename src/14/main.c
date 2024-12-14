@@ -2,6 +2,7 @@
 #include "str.h"
 #include "utils.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -248,8 +249,8 @@ void print_grid(da_type* grid, size_t grid_width, size_t grid_height) {
 int save_to_pbm(const char* path, int* data, size_t width, size_t height) {
 	FILE* fp;
 	char* header;
-	size_t i = 0;
-	size_t pixel_count = width * height;
+	size_t x = 0;
+	size_t y = 0;
 
 	fp = fopen(path, "w");
 	if (fp == NULL) {
@@ -264,22 +265,39 @@ int save_to_pbm(const char* path, int* data, size_t width, size_t height) {
 		return 1;
 	}
 
-	sprintf(header, "P1\n%lu %lu\n", width, height);
+	sprintf(header, "P4\n%lu %lu\n", width, height);
 	fwrite(header, 1, strlen(header), fp);
 	free(header);
 
-	for(i = 0; i < pixel_count; ++i) {
-		int n = data[i];
+	/**
+	 * netpbm has colours inverted, 1 == black, 0 == white.
+	 * binary format packs eight pixels into a byte.
+	 * bytes are padded such that each row is a whole number of bytes.
+	 */
 
-		/* netpbm has colour inverted, 1 == black, 0 == white*/
-		if (n == 0) {
-			fwrite("1", 1, 1, fp);
-		} else {
-			fwrite("0", 1, 1, fp);
-		}
+	for (y = 0; y < height; ++y) {
+		size_t offset = y * width;
 
-		if ((i + 1) % width == 0) {
-			fwrite("\n", 1, 1, fp);
+		for (x = 0; x < width; x += 8) {
+			uint8_t p = 0;
+			size_t z = 0;
+			for (z = 0; z < 8; ++z) {
+				size_t index = x + z + offset;
+				int n;
+
+				p <<= 1;
+
+				if (x + z >= width) {
+					continue;
+				}
+
+				n = data[index];
+				if (n == 0) {
+					p |= 1;
+				}
+
+			}
+			fwrite(&p, 1, 1, fp);
 		}
 	}
 
