@@ -52,6 +52,23 @@ typedef void destructor_fn(void* ptr);
 void da_set_destructor(da_type* da, destructor_fn* fn);
 
 /*///////////////////////////////////////////////////////////////////////////*/
+/* Errors                                                                    */
+/*///////////////////////////////////////////////////////////////////////////*/
+
+/**
+ * Returns a string describing the status code.
+ */
+char* da_strerror(da_status_type status);
+
+/**
+ * Prints an error message.
+ *
+ * @param [inout] da	some pointer returned by `da_create()`
+ * @param [in]    s 	a prefix string (may be NULL)
+ */
+void da_perror(da_type* da, const char* s);
+
+/*///////////////////////////////////////////////////////////////////////////*/
 /* DynamicArray                                                              */
 /*///////////////////////////////////////////////////////////////////////////*/
 
@@ -79,6 +96,19 @@ da_type* da_create(size_t elem_size);
  * @see	`da_set_destructor()`
  */
 void da_destroy(void* da);
+
+/**
+ * Clears the array and sets the contents to `count` copies of `value`.
+ *
+ * @param [inout] da   	some pointer returned by `da_create()`
+ * @param         count	number of elements
+ * @param         value	value of new elements
+ */
+#define da_assign(da, count, value) \
+	da_assign_(__FILE__, __LINE__, da, count, value)
+void da_assign_(
+	const char* file, size_t line, da_type* da, size_t count, void* value
+);
 
 /*///////////////////////////////////////////////////////////////////////////*/
 /* Element Access                                                            */

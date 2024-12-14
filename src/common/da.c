@@ -24,6 +24,29 @@ void da_set_destructor(da_type* da, destructor_fn* fn) {
 }
 
 /*///////////////////////////////////////////////////////////////////////////*/
+/* Errors                                                                    */
+/*///////////////////////////////////////////////////////////////////////////*/
+
+char* da_strerror(da_status_type status) {
+	switch (status) {
+		case DA_OK:            return "ok";
+		case DA_OUT_OF_MEMORY: return "out of memory";
+		case DA_OUT_OF_BOUNDS: return "out of bounds";
+		case DA_INVALID_SIZE:  return "invalid size";
+		case DA_BAD_RANGE:     return "bad range";
+		default:               return "unkown error";
+	}
+}
+
+void da_perror(da_type* da, const char* s) {
+	if (s != NULL) {
+		printf("%s: ", s);
+	}
+
+	printf("%s @ %s:%lu\n", da_strerror(da->status), da->file, da->line);
+}
+
+/*///////////////////////////////////////////////////////////////////////////*/
 /* DynamicArray                                                              */
 /*///////////////////////////////////////////////////////////////////////////*/
 
@@ -70,6 +93,31 @@ void da_destroy(void* tmp) {
 
 	free(da->data);
 	free(da);
+}
+
+void da_assign_(
+	const char* file, size_t line, da_type* da, size_t count, void* value
+) {
+	size_t i = 0;
+
+	da->status = DA_OK;
+	da->file   = file;
+	da->line   = line;
+
+	da_clear(da);
+
+	if (count > da->capacity) {
+		da_reserve(da, count);
+
+		/* pass error back up to caller */
+		if (da->status != DA_OK) {
+			return;
+		}
+	}
+
+	for (i = 0; i < count; ++i) {
+		da_append(da, value);
+	}
 }
 
 /*///////////////////////////////////////////////////////////////////////////*/
