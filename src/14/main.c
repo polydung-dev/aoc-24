@@ -6,6 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+size_t count_begin = 0;
+size_t count_end = 100;
+
+int save_frames = 0;
+
 const char filename[] = "./data/14/test.txt";
 
 struct Robot {
@@ -18,9 +23,14 @@ struct Robot {
 da_type* parse_input(da_type* lines);
 void advance_robots(da_type* robots, int max_x, int max_y);
 
-int main(void) {
-	int n = 0;
+void fill_grid(
+	da_type* grid, da_type* robots, size_t grid_width, size_t grid_height
+);
+void print_grid(da_type* grid, size_t grid_width, size_t grid_height);
 
+int save_to_pbm(const char* path, int* data, size_t width, size_t height);
+
+int main(void) {
 	size_t i = 0;
 	size_t x = 0;
 	size_t y = 0;
@@ -29,6 +39,7 @@ int main(void) {
 	da_type* grid = da_create(sizeof(int));
 	size_t grid_width = 0;
 	size_t grid_height = 0;
+	char* path = NULL;
 
 	int ul_safety = 0;
 	int ur_safety = 0;
@@ -66,57 +77,35 @@ int main(void) {
 
 	printf("----------------------------------------------------------\n");
 	printf("Initial Layout\n");
+	fill_grid(grid, robots, grid_width, grid_height);
+	print_grid(grid, grid_width, grid_height);
 
-	da_assign(grid, grid_width * grid_height, &n);
-	for (i = 0; i < da_size(robots); ++i) {
-		struct Robot* r = da_at(robots, i);
-		int* n = da_at(grid, r->px + (r->py * grid_width));
-		++(*n);
+	path = malloc(256);
+	if (path == NULL) {
+		fprintf(stderr, "filepath buffer: out of memory\n");
+		exit(1);
 	}
 
-	for (y = 0; y < grid_height; ++y) {
-		size_t offset = y * grid_width;
-		for (x = 0; x < grid_width; ++x) {
-			size_t index = x + offset;
-			int n = da_get_as(grid, index, int);
-
-			if (n == 0) {
-				printf(".");
-			} else {
-				printf("%i", n);
-			}
-		}
-		printf("\n");
-	}
-
-	for (i = 0; i < 100; ++i) {
+	for (i = count_begin; i < count_end; ++i) {
 		advance_robots(robots, grid_width, grid_height);
+
+		if (!save_frames) {
+			continue;
+		}
+
+		sprintf(path, "images/%06lu.pbm", i + 1);
+
+		fill_grid(grid, robots, grid_width, grid_height);
+		save_to_pbm(path, da_data(grid), grid_width, grid_height);
 	}
+
+	free(path);
 
 	printf("----------------------------------------------------------\n");
 	printf("Final Layout\n");
 
-	da_assign(grid, grid_width * grid_height, &n);
-	for (i = 0; i < da_size(robots); ++i) {
-		struct Robot* r = da_at(robots, i);
-		int* n = da_at(grid, r->px + (r->py * grid_width));
-		++(*n);
-	}
-
-	for (y = 0; y < grid_height; ++y) {
-		size_t offset = y * grid_width;
-		for (x = 0; x < grid_width; ++x) {
-			size_t index = x + offset;
-			int n = da_get_as(grid, index, int);
-
-			if (n == 0) {
-				printf(".");
-			} else {
-				printf("%i", n);
-			}
-		}
-		printf("\n");
-	}
+	fill_grid(grid, robots, grid_width, grid_height);
+	print_grid(grid, grid_width, grid_height);
 
 	printf("----------------------------------------------------------\n");
 	for (y = 0; y < (grid_height / 2); ++y) {
@@ -219,4 +208,82 @@ void advance_robots(da_type* robots, int max_x, int max_y) {
 			r->py -= max_y;
 		}
 	}
+}
+
+void fill_grid(
+	da_type* grid, da_type* robots, size_t grid_width, size_t grid_height
+) {
+	size_t i = 0;
+	int x = 0;
+
+	da_assign(grid, grid_width * grid_height, &x);
+
+	for (i = 0; i < da_size(robots); ++i) {
+		struct Robot* r = da_at(robots, i);
+		int* n = da_at(grid, r->px + (r->py * grid_width));
+		++(*n);
+	}
+}
+
+void print_grid(da_type* grid, size_t grid_width, size_t grid_height) {
+	size_t x = 0;
+	size_t y = 0;
+
+	for (y = 0; y < grid_height; ++y) {
+		size_t offset = y * grid_width;
+		for (x = 0; x < grid_width; ++x) {
+			size_t index = x + offset;
+			int n = da_get_as(grid, index, int);
+
+			if (n == 0) {
+				printf(".");
+			} else {
+				printf("%i", n);
+			}
+		}
+		printf("\n");
+	}
+}
+
+int save_to_pbm(const char* path, int* data, size_t width, size_t height) {
+	FILE* fp;
+	char* header;
+	size_t i = 0;
+	size_t pixel_count = width * height;
+
+	fp = fopen(path, "w");
+	if (fp == NULL) {
+		perror("save_to_pbm: writing pbm");
+		return 1;
+	}
+
+	header = calloc(32, 1);
+	if (header == NULL) {
+		perror("save_to_pbm: allocating header buffer");
+		fclose(fp);
+		return 1;
+	}
+
+	sprintf(header, "P1\n%lu %lu\n", width, height);
+	fwrite(header, 1, strlen(header), fp);
+	free(header);
+
+	for(i = 0; i < pixel_count; ++i) {
+		int n = data[i];
+
+		/* netpbm has colour inverted, 1 == black, 0 == white*/
+		if (n == 0) {
+			fwrite("1", 1, 1, fp);
+		} else {
+			fwrite("0", 1, 1, fp);
+		}
+
+		if ((i + 1) % width == 0) {
+			fwrite("\n", 1, 1, fp);
+		}
+	}
+
+	fclose(fp);
+
+	return 0;
 }
