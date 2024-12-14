@@ -41,22 +41,27 @@ da_type* str_split(char* str, char* delim) {
 
 char* str_join(char* joiner, char** strings, size_t count) {
 	size_t i = 0;
-	size_t sz = 1 + ((count - 1) * strlen(joiner));
-	char* s = NULL;
+	size_t sz = 0;
+	char* str = NULL;
 	char* p = NULL;
 
 	for (i = 0; i < count; ++i) {
 		sz += strlen(strings[i]);
 	}
+	sz += strlen(joiner) * (count - 1);
+	sz += 1;
 
-	s = calloc(sz, 1);
-	p = s;
+	str = calloc(sz, 1);
+	p = str;
 
 	for (i = 0; i < count; ++i) {
-		p = strcpy(p, strings[i]);
+		strcpy(p, strings[i]);
+		p += strlen(strings[i]);
+		strcpy(p, joiner);
+		p += strlen(joiner);
 	}
 
-	return s;
+	return str;
 }
 
 void str_r_strip(char* string, char* to_strip) {

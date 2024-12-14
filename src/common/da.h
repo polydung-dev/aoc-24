@@ -105,6 +105,16 @@ void* da_at_(const char* file, size_t line, da_type* da, size_t index);
  */
 #define da_get_as(da, index, type) (*(type*)da_at(da, index))
 
+/**
+ * Direct access to the underlying array.
+ *
+ * @param	da   	some pointer returned by `da_create()`
+ *
+ * @returns	a pointer to the array	if da->size != 0
+ * @returns	NULL                  	if da->size == 0
+ */
+void* da_data(da_type* da);
+
 /*///////////////////////////////////////////////////////////////////////////*/
 /* Iterators                                                                 */
 /*///////////////////////////////////////////////////////////////////////////*/
@@ -153,6 +163,16 @@ da_status_type da_reserve_(
 /*///////////////////////////////////////////////////////////////////////////*/
 
 /**
+ * Clears the array.
+ *
+ * After clearing the array, the size will be 0 but the capacity will remain
+ * unchanged.
+ *
+ * @param [inout] da   	some pointer returned by `da_create()`
+ */
+void da_clear(da_type* da);
+
+/**
  * Append an element to the array.
  *
  * Data is copied over from the memory location pointed to.
@@ -165,7 +185,7 @@ da_status_type da_reserve_(
  * - `DA_OUT_OF_MEMORY`
  */
 #define da_append(da, value) da_append_(__FILE__, __LINE__, da, value)
-void da_append_(const char* file, size_t line, da_type* da, void* value);
+ptrdiff_t da_append_(const char* file, size_t line, da_type* da, void* value);
 
 /**
  * Inserts an element into the array before the given position.

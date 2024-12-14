@@ -89,6 +89,14 @@ void* da_at_(const char* file, size_t line, da_type* da, size_t index) {
 	return (char*)da->data + (index * da->elem_size);
 }
 
+void* da_data(da_type* da) {
+	if (da->size == 0) {
+		return NULL;
+	}
+
+	return da->data;
+}
+
 /*///////////////////////////////////////////////////////////////////////////*/
 /* "Iterators"                                                               */
 /*///////////////////////////////////////////////////////////////////////////*/
@@ -139,8 +147,27 @@ da_status_type da_reserve_(
 /* Modifiers                                                                 */
 /*///////////////////////////////////////////////////////////////////////////*/
 
-void da_append_(const char* file, size_t line, da_type* da, void* value) {
+void da_clear(da_type* da) {
+	if (da->destructor == NULL) {
+		memset(da->data, 0, da->size * da->elem_size);
+	} else {
+		void* it = NULL;
+		for (it = da_begin(da); it != da_end(da); /**/ ) {
+			da->destructor(it);
+			it = (char*)it + da->elem_size;
+		}
+	}
+
+	da->size = 0;
+	return;
+}
+
+ptrdiff_t da_append_(const char* file, size_t line, da_type* da, void* value) {
 	char* dst = NULL;
+
+	/* keep track of offset */
+	char* old = da->data;
+	ptrdiff_t offset = 0;
 
 	da->status = DA_OK;
 	da->file   = file;
@@ -151,13 +178,17 @@ void da_append_(const char* file, size_t line, da_type* da, void* value) {
 
 		/* pass error back up to caller */
 		if (da->status != DA_OK) {
-			return;
+			return 0;
 		}
+
+		offset = (char*)da->data - old;
 	}
 
 	dst = da_end(da);
 	memcpy(dst, value, da->elem_size);
 	++da->size;
+
+	return offset;
 }
 
 void* da_insert_(
@@ -224,7 +255,7 @@ void* da_erase_(const char* file, size_t line, da_type* da, void* pos) {
 	}
 	--da->size;
 
-	return src;
+	return dst;
 }
 
 /*///////////////////////////////////////////////////////////////////////////*/
