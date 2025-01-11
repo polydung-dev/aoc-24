@@ -31,7 +31,7 @@ void read_lines(const char* path, da_type* lines) {
 		char* s = NULL;
 
 		if ((strlen(buf) + 1) == READ_BUFFER_SIZE) {
-			fprintf(stderr, "buffer too small\n");
+			fprintf(stderr, "buffer too small (%u)\n", READ_BUFFER_SIZE);
 			fclose(fp);
 			free(buf);
 			exit(1);

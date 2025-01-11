@@ -3,12 +3,10 @@
 
 #include "da.h"
 
-#ifndef READ_BUFFER_SIZE
 /**
  * The maximum size of a single line (in bytes)
  */
-#define READ_BUFFER_SIZE 256
-#endif
+#define READ_BUFFER_SIZE 1024
 
 /**
  * Reads a file and splits each line into a dynamic array.
